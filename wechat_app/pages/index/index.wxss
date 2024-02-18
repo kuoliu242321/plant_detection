@@ -1,0 +1,33 @@
+.container {
+    padding: 20px;
+  }
+  .userfo{
+    display: flex;
+    flex-direction: column;
+    align-items:center;
+    color: blue;
+    font-size:medium;
+}
+.usermotto{
+    flex-direction: column;
+    position:unset;
+    overflow:scroll;
+    width: 1.5cm;
+    height: 1.5cm;
+    margin: 0.2cm;
+    border-radius: 50%;
+}
+  input {
+    width: 80%;
+    margin-top: 20px;
+    padding: 10px;
+  }
+  
+  button {
+    width: 80%;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+  }
+  

@@ -1,0 +1,24 @@
+<view class="container">
+  <!-- 温度图表 -->
+  <image class="usermotto" src="../images/温度.png" mode="aspectFill"></image>
+  <text class="userfo">温度: {{temperaturevalue}}°C</text>
+
+  <!-- 湿度图表 -->
+  <image class="usermotto" src="../images/湿度.png" mode="aspectFill"></image>
+  <text class="userfo">湿度: {{humidityvalue}}%</text>
+
+  <!-- 气压图表 -->
+  <image class="usermotto" src="../images/大气压力.png" mode="aspectFill"></image>
+  <text class="userfo">气压: {{airPressurevalue}} hPa</text>
+
+  <!-- 土壤湿度图表 -->
+  <image class="usermotto" src="../images/土壤湿度.png" mode="aspectFill"></image>
+  <text class="userfo">土壤湿度: {{soilHumidityvalue}}%</text>
+
+  <!-- 输入框和按钮 -->
+</view>
+<!-- pages/index/index.wxml -->
+<view class="container">
+  <input bindinput="onCodeInput" placeholder="输入 code 的值" />
+  <button bindtap="onPublishClick">发布消息</button>
+</view>
