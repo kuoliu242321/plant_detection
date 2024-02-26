@@ -105,12 +105,12 @@ void task8(void *pvParameters);             /* 任务函数 */
 QueueHandle_t xQueueDHT11Data;
 //***************************DHT11数据提供
 
-//***************************soil数据提供
+//***************************soilhumity数据提供
 // 定义队列的长度
 #define QUEUE_LENGTH_soil    1
 // 定义队列句柄
 QueueHandle_t xQueuesoil_Data;
-//***************************soil数据提供
+//***************************soilhumity数据提供
 
 //***************************bmp280数据提供
 // 定义队列的长度
@@ -130,15 +130,15 @@ EventGroupHandle_t myEventGroup;//事件组
 void freertos_demo(void)
 {
 
-    myEventGroup = xEventGroupCreate();
+    myEventGroup = xEventGroupCreate();//防止多个程序同时读取队列组数据读取造成死锁
     
-//    xQueueIRQcmd = xQueueCreate(QUEUE_LENGTH_IRQcmd, sizeof(char));
+//  xQueueIRQcmd = xQueueCreate(QUEUE_LENGTH_IRQcmd, sizeof(char));
     xQueuebmp280_Data = xQueueCreate(QUEUE_LENGTH_bmp280, sizeof(bmp280_Data));
     xQueueDHT11Data = xQueueCreate(QUEUE_LENGTH_dht11, sizeof(DHT11_Data_TypeDef));
     xQueuesoil_Data = xQueueCreate(QUEUE_LENGTH_soil, sizeof(soil_detect_Data));
     
     if(( xQueueDHT11Data != NULL )&(xQueuesoil_Data != NULL)&(xQueuebmp280_Data != NULL))
-	{
+    {
     xTaskCreate((TaskFunction_t )start_task,            /* 任务函数 */
                 (const char*    )"start_task",          /* 任务名称 */
                 (uint16_t       )START_STK_SIZE,        /* 任务堆栈大小 */
@@ -236,13 +236,13 @@ xLastWakeTime = xTaskGetTickCount();
     {
          if(Read_DHT11(&DHT11_Data) == SUCCESS)
             {
-                xStatus = xQueueOverwrite( xQueueDHT11Data, &DHT11_Data);
+                xStatus = xQueueOverwrite( xQueueDHT11Data, &DHT11_Data);//将DHT11读出的数据覆写入队列组
                 //printf("this okey!%d %d %d %d\r\n",DHT11_Data.humi_deci,DHT11_Data.humi_int,DHT11_Data.temp_deci,DHT11_Data.temp_int);
                 vTaskDelayUntil(&xLastWakeTime, xFrequency);
                     if( xStatus != pdPASS  )
                     {
                         printf( "Flase from tem&humi.\r\n" );
-                        vTaskDelay(pdMS_TO_TICKS(2000)); // 1秒
+                        vTaskDelay(pdMS_TO_TICKS(2000)); // 2秒
                     }
             }
     }
@@ -298,7 +298,7 @@ xLastWakeTime = xTaskGetTickCount();// 初始化上次唤醒时间
             temp *= 1000;                                       /* 小数部分乘以1000，例如：0.1111就转换为111.1，相当于保留三位小数。 */
             //printf("%f ",temp);//************************
             soil_data.temp_decimal = temp;
-            xStatus = xQueueOverwrite( xQueuesoil_Data, &soil_data); /* 只需要写入地址, 无需写入整个struct */
+            xStatus = xQueueOverwrite( xQueuesoil_Data, &soil_data); //将ADC读出的数据覆写入队列组
             
             //printf("%d %d %d\r\n",soil_data.adc_integer,soil_data.original_adc,soil_data.temp_decimal);
             
@@ -330,15 +330,14 @@ ID=BMP280_ReadID();          //获得ID号
 TickType_t xLastWakeTime;
 const TickType_t xFrequency = pdMS_TO_TICKS(1000); // 
 
-// 初始化上次唤醒时间
-xLastWakeTime = xTaskGetTickCount();
+xLastWakeTime = xTaskGetTickCount();// 初始化上次唤醒时间
     
     while(1)
     {
-        soil_data.pressure = BMP280_Get_Pressure()/1000;
+        soil_data.pressure = BMP280_Get_Pressure()/1000;//如101.256kpa
         soil_data.tempture = BMP280_Get_Temperature();
         soil_data.id = ID;  
-        xStatus_bmp280 = xQueueOverwrite( xQueuebmp280_Data, &soil_data);
+        xStatus_bmp280 = xQueueOverwrite( xQueuebmp280_Data, &soil_data);//将BMP280读出的数据覆写入队列组
         if( xStatus_bmp280 == pdPASS )
             {
             //printf("%d %f %f\r\n",soil_data.id,soil_data.pressure,soil_data.tempture);
@@ -379,22 +378,22 @@ BaseType_t xStatus_dht11;
        
 
         /* 读队列*/
-        xStatus_dht11 = xQueuePeek( xQueueDHT11Data, &received_data, xTicksToWait); /* 得到buffer地址，只是4字节 */
+        xStatus_dht11 = xQueuePeek( xQueueDHT11Data, &received_data, xTicksToWait); //偷看队列组
         xStatus_bmp280 = xQueuePeek( xQueuebmp280_Data, &receive_bmp280, xTicksToWait);
         if(( xStatus_dht11 ==  pdTRUE )&(xStatus_bmp280 == pdTRUE))
                 {
-                EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x01);
+                EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x01);//由此另task5得以继续执行
                 
-                char temptuare_int[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                char temptuare_int[3];  
                 sprintf(temptuare_int, "%u", received_data.temp_int);
                
-                char temptuare_dec[2];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                char temptuare_dec[2];  
                 sprintf(temptuare_dec, "%u", received_data.temp_deci);        
               
-                char humity_int[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                char humity_int[3];  
                 sprintf(humity_int, "%u", received_data.humi_int);        
                 
-                char humity_dec[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                char humity_dec[3];  
                 sprintf(humity_dec, "%u", received_data.humi_deci);  
                     
                 char int_pre[4]; // 存储整数部分的字符串，包括终止符 '\0'
@@ -409,8 +408,8 @@ BaseType_t xStatus_dht11;
                 size_t total = strlen(tem) + strlen(temptuare_int)+ strlen(point)+ strlen(temptuare_dec)+ strlen(back)+ strlen(hum)+ strlen(humity_int)+ strlen(point) + strlen(humity_dec) + strlen(back)+ strlen(presure)+ strlen(int_pre)+ strlen(point)+ strlen(dec_pre)+ 1; // 加1是为了容纳字符串末尾的'\0'
                 char result[total];
                 sprintf(result, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s", tem, temptuare_int, point, temptuare_dec,back, hum, humity_int, point, humity_dec,back,presure,int_pre,point,dec_pre);
-                    
-                HC05_SendString(result);
+                //****************    
+                HC05_SendString(result);//通过串口发送至蓝牙，借由APP“SSP蓝牙串口”查看
 
                 vTaskDelayUntil(&xLastWakeTime, xTicksToWait);
                     
@@ -432,9 +431,11 @@ void task5(void *pvParameters)
 {
 DHT11_Data_TypeDef received_data;//温湿度
 bmp280_Data receive_bmp280;//大气压
+
 const TickType_t xTicksToWait = pdMS_TO_TICKS( 1000 );	
 TickType_t xLastWakeTime;
 xLastWakeTime = xTaskGetTickCount();// 初始化上次唤醒时间
+
 char back[] = " ";
 char message_1[]="01";
 char message_2[]="06";   
@@ -451,31 +452,35 @@ BaseType_t xStatus_dht11;
                     //if( xStatus_bmp280 ==  pdTRUE )
                       {
                         //********************************************************************************************************        
-                                char temptuare_int[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                                char temptuare_int[3]; 
                                 sprintf(temptuare_int, "%u", received_data.temp_int);
                                
-                                char temptuare_dec[2];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                                char temptuare_dec[2];
                                 sprintf(temptuare_dec, "%u", received_data.temp_deci);        
                               
-                                char humity_int[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                                char humity_int[3];
                                 sprintf(humity_int, "%u", received_data.humi_int);        
                                 
-                                char humity_dec[3];  // 这里假设uint8_t的范围是0-255，所以最多占用3个字符
+                                char humity_dec[3];
                                 sprintf(humity_dec, "%u", received_data.humi_deci);        
                                 size_t uart1_len=strlen(message_1)+strlen(back)+strlen(temptuare_int)+strlen(back)+strlen(temptuare_dec)+1;
                                 char datatem_hexsend[uart1_len];
                                 sprintf(datatem_hexsend, "%s%s%s%s%s", message_1, back, temptuare_int, back,temptuare_dec);
                                 char datahumi_hexsend[uart1_len];
                                 sprintf(datahumi_hexsend, "%s%s%s%s%s", message_2, back, humity_int, back,humity_dec);   
+
+                                sendDecimalToHex(datatem_hexsend);
+                                //发送数据为16进制数，01判定为温度数据“01 23 05”35.5度；播报“当前温度为35.5度”
+                                SendFormattedData(receive_bmp280.pressure);
+                                //发送数据为16进制数，03判定为大气压整数数据“03 7B 00 00 00”123千帕；0判定为大气压小数数据“05 2D 00 00 00”45帕 ；播报“当前大气压为123.45千帕”
+                                sendDecimalToHex(datahumi_hexsend);  
+                                //湿度06判定为温度数据“06 5F 08”95.8；播报“当前相对湿度为百分之95.8”
+                                //printf("%f,%d\r\n",receive_bmp280.pressure,receive_bmp280.id);
                         //********************************************************************************************************        
-                                sendDecimalToHex(datatem_hexsend);//温度
-                                SendFormattedData(receive_bmp280.pressure);//大气压
-                                sendDecimalToHex(datahumi_hexsend);  //湿度
-//                                printf("%f,%d\r\n",receive_bmp280.pressure,receive_bmp280.id);
                                 vTaskDelayUntil(&xLastWakeTime, xTicksToWait);
 
                         }        
-            EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x02);
+            EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x02);//由此另task7得以继续执行
             }
             else
             {
@@ -494,7 +499,8 @@ BaseType_t xStatus_dht11;
 void task6(void *pvParameters)
 {
 //#define TASK_LIST_BUFFER_SIZE 512
-//static char taskListBuffer[TASK_LIST_BUFFER_SIZE];   
+//static char taskListBuffer[TASK_LIST_BUFFER_SIZE];
+
 DHT11_Data_TypeDef received_data;//温湿度
 bmp280_Data receive_bmp280;//大气压
 soil_detect_Data soil_data;// 土壤湿度
@@ -507,7 +513,7 @@ xLastWakeTime = xTaskGetTickCount();  // 初始化上次唤醒时间
 
 //vTaskList(taskListBuffer);// 生成任务列表文本并存储到缓冲区中
 //printf("Task List:\n%s\n", taskListBuffer);// 输出任务列表文本到控制台或其他输出设备
-        
+
         //EventBits_t bits = xEventGroupWaitBits(myEventGroup, 0x04, pdTRUE, pdTRUE, 0);
         //if ((bits & 0x04) != 0) 
             {        
@@ -523,10 +529,12 @@ xLastWakeTime = xTaskGetTickCount();  // 初始化上次唤醒时间
                         // 获取缓冲区长度
                         size_t len = strlen(buffer);
                         // 使用HAL库的UART发送函数发送数据
-                        HAL_UART_Transmit(&g_uart1_handle, (uint8_t *)buffer, len, HAL_MAX_DELAY);
-//                        taskENTER_CRITICAL();
-//                        printf("%.1f %6.f %.2f %.1f\n",soilhumitidy,receive_bmp280.pressure*1000,humidity,temperature);
-//                        taskEXIT_CRITICAL();
+                        HAL_UART_Transmit(&g_uart1_handle, (uint8_t *)buffer, len, HAL_MAX_DELAY);//25.2 12345 52.8 12.5  串口1发送的数据消息
+
+                        // taskENTER_CRITICAL();
+                        // printf("%.1f %6.f %.2f %.1f\n",soilhumitidy,receive_bmp280.pressure*1000,humidity,temperature);
+                        //taskEXIT_CRITICAL();
+                    
                 }
             }
                 vTaskDelayUntil(&xLastWakeTime, xTicksToWait);
@@ -581,19 +589,19 @@ xLastWakeTime = xTaskGetTickCount();  // 初始化上次唤醒时间
                     OLED_Update();
                     //********************************************************************************************************        
 
-//                    clearString(g_usart_rx_buf, sizeof(g_usart_rx_buf));     
-//                    clearString(g_usart_rx_buf2, sizeof(g_usart_rx_buf2));  
-//                    clearString(g_usart_rx_buf3, sizeof(g_usart_rx_buf3)); 
+//                    clearString(g_usart_rx_buf, sizeof(g_usart_rx_buf));
+//                    clearString(g_usart_rx_buf2, sizeof(g_usart_rx_buf2));
+//                    clearString(g_usart_rx_buf3, sizeof(g_usart_rx_buf3));//原先用于清除串口1、2、3接收的缓存数组
                  }
-             EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x04);
+             EventBits_t bits = xEventGroupSetBits(myEventGroup, 0x04);//由此另task6得以继续执行，出现task6阻塞问题未解决，未使用
              }
-            
-                vTaskDelayUntil(&xLastWakeTime, xTicksToWait);
+
+    vTaskDelayUntil(&xLastWakeTime, xTicksToWait);
     }
 }
 
 /**
- * @brief       task8***************************灯控
+ * @brief       task8***************************灯控（雾化片未焊接暂用灯）
  * @param       pvParameters : 传入参数(未用到)
  * @retval      无
  */
@@ -606,13 +614,8 @@ void task8(void *pvParameters)
     while(1)
     {
     HC05_show();
-    //led_conctrl(g_rx_buffer, sizeof(g_rx_buffer));//on off 控制led亮灭
-    //led_conctrl(g_rx_buffer2, sizeof(g_rx_buffer2));//on off 控制led亮灭
-    led_conctrl((char *)g_rx_buffer,(char *)g_rx_buffer2);
-//    printf("%s %s\r\n",g_rx_buffer,g_rx_buffer2);
-//    clearString(g_usart_rx_buf3, sizeof(g_usart_rx_buf3)); 
-//    clearString(g_usart_rx_buf, sizeof(g_usart_rx_buf));     
-//    clearString(g_usart_rx_buf2, sizeof(g_usart_rx_buf2));             
+    led_conctrl((char *)g_rx_buffer,(char *)g_rx_buffer2);//由串口1、2控制LED灯灭或亮
+//  printf("%s %s\r\n",g_rx_buffer,g_rx_buffer2);
     vTaskDelayUntil(&xLastWakeTime, xFrequency);        
         
     }

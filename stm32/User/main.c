@@ -1,10 +1,6 @@
-
 #include "./SYSTEM/sys/sys.h"
 #include "./SYSTEM/usart/usart.h"
 #include "./SYSTEM/delay/delay.h"
-//#include "./BSP/LCD/lcd.h"
-//#include "./BSP/KEY/key.h"
-//#include "./MALLOC/malloc.h"
 #include "freertos_demo.h"
 #include <string.h>
 #include "OLED.h"
@@ -26,6 +22,6 @@ int main(void)
     adc_init();
     OLED_Init();
     DHT11_GPIO_Config(); //DHT11初始化   
-    
+
     freertos_demo();                    /* 运行FreeRTOS例程 */
 }

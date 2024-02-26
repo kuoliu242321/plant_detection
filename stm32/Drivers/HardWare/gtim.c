@@ -14,7 +14,7 @@ void gtim_timx_pwm_chy_init(uint16_t arr,uint16_t psc)
     HAL_TIM_PWM_Init(&g_tim_timx_pwm_chy_handle);
 
     
-    TIM_OC_InitTypeDef timx_oc_pwn_chy;    
+    TIM_OC_InitTypeDef timx_oc_pwn_chy;
     timx_oc_pwn_chy.OCMode = TIM_OCMODE_PWM1;
     timx_oc_pwn_chy.Pulse = arr/2;
     timx_oc_pwn_chy.OCPolarity = TIM_OCPOLARITY_LOW;
@@ -38,10 +38,5 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim2)
         gpio_init_struct.Pull = GPIO_PULLUP;
         gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
         HAL_GPIO_Init(GPIOA,&gpio_init_struct);
-
-//        gpio_init_struct.Pin = GPIO_PIN_1;
-//        HAL_GPIO_Init(GPIOA,&gpio_init_struct);
-
-
     }
 }

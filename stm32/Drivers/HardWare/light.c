@@ -63,7 +63,6 @@ void led_init(void){
 // 去除字符串中的回车换行符并返回截断后的字符串
 
 void led_conctrl(char *buffer1, char *buffer2) {
-    // 去除字符串中的回车换行符
     // 检查两个字符串是否同时为“1”或同时为“0”
     if (((strcmp(buffer1, "1") == 0) && (strcmp(buffer2, "1") == 0)) ||
         ((strcmp(buffer1, "2") == 0) && (strcmp(buffer2, "2") == 0))) {

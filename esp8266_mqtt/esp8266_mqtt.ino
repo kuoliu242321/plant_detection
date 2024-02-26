@@ -34,7 +34,6 @@ void setup() {
   wifiMulti.addAP("ZhouQ3", "87654321"); // 这3个WiFi网络名称分别是taichi-maker, taichi-maker2, taichi-maker3。
   wifiMulti.addAP("666", "12345678"); // 这3个网络的密码分别是123456789，87654321，13572468。
                                                 // 此处WiFi信息只是示例，请在使用时将需要连接的WiFi信息填入相应位置。
-                                                // 另外这里只存储了3个WiFi信息，您可以存储更多的WiFi信息在此处。
                                                 
   //Serial.println("Connecting ...");         // 通过串口监视器输出信息告知用户NodeMCU正在尝试连接WiFi
   int i = 0;                                 
@@ -93,54 +92,53 @@ void loop() {
     previousMillis = currentMillis;
 
     String payload;
-    //{"params":{"temp":1.22,"humity":22},"version":"1.0.0"}
+    //25.2 12345 52.8 12.5  串口接收的数据消息
     if (Serial.available() > 0) 
     {
-    // 读取串口接收到的数据
-    String receivedMessage = Serial.readStringUntil('\n');
-        // 将 String 对象转换为 C 风格字符串
-    char receivedMessageBuffer[receivedMessage.length() + 1]; // 加上 null 结尾字符所需的空间
-    receivedMessage.toCharArray(receivedMessageBuffer, sizeof(receivedMessageBuffer));
+      // 读取串口接收到的数据
+      String receivedMessage = Serial.readStringUntil('\n');
+     // 将 String 对象转换为 C 风格字符串
+      char receivedMessageBuffer[receivedMessage.length() + 1];
+      // 加上 null 结尾字符所需的空间
+      receivedMessage.toCharArray(receivedMessageBuffer, sizeof(receivedMessageBuffer));
+      // 使用 strtok() 函数解析 C 风格字符串
+      char *token = strtok(receivedMessageBuffer, " ");
+      // 如果 token 不为空，则说明成功分割到了字符串
+      if (token != NULL) {
+      // 第一个值为土壤湿度值
+      float soilHumidity = atof(token);
+      // 继续获取下一个 token
+      token = strtok(NULL, " ");
+      // 第二个值为气压
+      float airPressure = atof(token);
+      // 继续获取下一个 token
+      token = strtok(NULL, " ");
+      // 第三个值为湿度
+      float humidity = atof(token);
+      // 继续获取下一个 token
+      token = strtok(NULL, " ");
+      // 最后一个值为温度值
+      float temp = atof(token);
 
-    // 使用 strtok() 函数解析 C 风格字符串
-    char *token = strtok(receivedMessageBuffer, " ");
-// 如果 token 不为空，则说明成功分割到了字符串
-  if (token != NULL) {
-    // 第一个值为温度值
-    float temp = atof(token);
-    // 继续获取下一个 token
-    token = strtok(NULL, " ");
-    // 第二个值为气压
-    float airPressure = atof(token);
-    // 继续获取下一个 token
-    token = strtok(NULL, " ");
-    // 第三个值为湿度
-    float humidity = atof(token);
-    // 继续获取下一个 token
-    token = strtok(NULL, " ");
-    // 最后一个值为土壤湿度
-    float soilHumidity = atof(token);
+      DynamicJsonDocument json_msg(512);
+      DynamicJsonDocument json_data(512);
 
-    DynamicJsonDocument json_msg(512);
-    DynamicJsonDocument json_data(512);
+      json_data["temp"] = temp;
+      json_data["Airpressure"] = airPressure;
+      json_data["humity"] = humidity;
+      json_data["soil_humity"] = soilHumidity;
 
-    json_data["temp"] = soilHumidity;
-    json_data["Airpressure"] = airPressure;
-    json_data["humity"] = humidity;
-    json_data["soil_humity"] = temp;
-
-  
-    json_msg["params"] = json_data;
-    json_msg["version"] = "1.0.0";
+    
+      json_msg["params"] = json_data;
+      json_msg["version"] = "1.0.0";
 
 
-    serializeJson(json_msg,payload);
-                  }
+      serializeJson(json_msg,payload);
     }
+  }
     //Serial.print("Sending message to topic: ");
     //Serial.println(outTopic);
     //Serial.println(payload);
-//////////////////////////////////////////////////////////////////////////
 
     bool retained = false;
     int qos = 1;
@@ -149,15 +147,10 @@ void loop() {
     mqttClient.beginMessage(outTopic, payload.length(), retained, qos, dup);
     mqttClient.print(payload);
     mqttClient.endMessage();
-
     //Serial.println();
-
     count++;
   }
 }
-//{"deviceType":"CustomCategory","iotId":"ugQfUX7mggGYFPSvKC8Ek0sz10","requestId":"null","checkFailedData":{"code":{"code":6306,"message":"tsl parse: data type is not int -> code","time":1707149551046,"value":"15"}},"productKey":"k0sz1LKs4CN","gmtCreate":1707149551050,"deviceName":"mobile_app","items":{}}
-//{"deviceType":"CustomCategory","iotId":"NP6oDvFufxSTbY7izSazk0sz10","requestId":"null","checkFailedData":{},"productKey":"k0sz1LKs4CN","gmtCreate":1707113816359,"deviceName":"esp8266","items":{"temp":{"value":38.5,"time":1707113816355},"humity":{"value":52.3,"time":1707113816355}}}
-//{"deviceType":"CustomCategory","iotId":"ugQfUX7mggGYFPSvKC8Ek0sz10","requestId":"1706964102010","checkFailedData":{},"productKey":"k0sz1LKs4CN","gmtCreate":1706964101699,"deviceName":"mobile_app","items":{"code":{"value":50,"time":1706964101695}}}
 void onMqttMessage(int messageSize) {
   // we received a message, print out the topic and contents
   //Serial.print("Received a message with topic '");
@@ -176,45 +169,40 @@ void onMqttMessage(int messageSize) {
   while (mqttClient.available()) {
     char inChar =(char)mqttClient.read();
     inputString +=inChar;
-    if(inputString.length()==messageSize) {
-//{"deviceType":"CustomCategory","iotId":"ugQfUX7mggGYFPSvKC8Ek0sz10","requestId":"null","checkFailedData":{"code":{"code":6306,"message":"tsl parse: data type is not int -> code","time":1707149551046,"value":"15"}},"productKey":"k0sz1LKs4CN","gmtCreate":1707149551050,"deviceName":"mobile_app","items":{}}
-      
-                  if(inputString.length()>150){
-                  DynamicJsonDocument json_msg(1024);
-                  DynamicJsonDocument json_item(1024);
-                  DynamicJsonDocument json_value(1024);
+    if(inputString.length()==messageSize) 
+    {
+      //{"deviceType":"CustomCategory","iotId":"ugQfUxxxxxxvKC8Ek0sz10","requestId":"null","checkFailedData":{"code":{"code":6306,"message":"tsl parse: data type is not int -> code","time":1707149551046,"value":"15"}},"productKey":"k0sxxxxx4CN","gmtCreate":1707149551050,"deviceName":"mobile_app","items":{}}    
+      if(inputString.length()>150){
+      DynamicJsonDocument json_msg(1024);
+      DynamicJsonDocument json_item(1024);
+      DynamicJsonDocument json_value(1024);
 
-                  deserializeJson(json_msg,inputString);
+      deserializeJson(json_msg,inputString);
 
-                  String checkFailedData = json_msg["checkFailedData"];
+      String checkFailedData = json_msg["checkFailedData"];
 
-                  deserializeJson(json_item,checkFailedData);
-                  String code = json_item["code"];
+      deserializeJson(json_item,checkFailedData);
+      String code = json_item["code"];
 
-                  deserializeJson(json_value,code);
-                  int value = json_value["value"].as<int>();
-                  Serial.print(value);
-                  //Serial.println(inputString);
-                  }
-                      else{
-                      StaticJsonDocument<200> doc;
-
-                      // 解析 JSON 数据
-                      DeserializationError error = deserializeJson(doc, inputString);
-                      // 提取 "message" 值并检查是否为 "success"
-                      const char* message = doc["message"];
-                      if (strcmp(message, "success") == 0) {
-                      //Serial.println("Received success message!");
-                      } else {
-                      //Serial.println("Received message, but not success!");
-                      }
-                           }
+      deserializeJson(json_value,code);
+      int value = json_value["value"].as<int>();
+      Serial.print(value);//print输出不带有回车及换行
+      //Serial.println(inputString);
+    }
+    else{
+            StaticJsonDocument<200> doc;
+            // 解析 JSON 数据
+            DeserializationError error = deserializeJson(doc, inputString);
+            // 提取 "message" 值并检查是否为 "success"
+            const char* message = doc["message"];
+            if (strcmp(message, "success") == 0) {
+            //Serial.println("Received success message!");
+            } else {
+            //Serial.println("Received message, but not success!");
+            }
+       }
       inputString="";//数组清零
     }
-
-
   }
-  //Serial.println();
-
   //Serial.println();
 }
